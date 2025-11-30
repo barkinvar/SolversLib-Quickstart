@@ -6,22 +6,24 @@ import org.firstinspires.ftc.teamcode.subsystems.Feeder;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 
+import java.util.function.BooleanSupplier;
+
 /**
  * A simple command that runs the shooter at a specific velocity while active,
  * and stops the shooter when it ends.
  */
-public class shootFeedCommand extends CommandBase {
+public class ShootFeedCommand extends CommandBase {
 
     private Shooter shooter;
     private Feeder feeder;
     private Intake intake;
-    private int wait = 0;
+    private  BooleanSupplier isAligned;
 
-    public shootFeedCommand(Feeder feeder, Intake intake, Shooter shooter) {
+    public ShootFeedCommand(Feeder feeder, Intake intake, Shooter shooter, BooleanSupplier isAligned) {
         this.feeder = feeder;
         this.shooter = shooter;
         this.intake = intake;
-
+        this.isAligned = isAligned;
         // Declare subsystem dependency so the scheduler knows
         // this command requires the Shooter subsystem.
         addRequirements(feeder, intake);
@@ -31,16 +33,11 @@ public class shootFeedCommand extends CommandBase {
     public void initialize() {
         feeder.setSpeed(0.0);
         intake.setSpeed(0.0);
-        wait = 0;
     }
 
     @Override
     public void execute() {
-        if (wait < 2) {
-            wait++;
-        }
-
-        if (Math.abs(shooter.getError()) < 175.0 && wait >= 2) {
+        if (Math.abs(shooter.getError()) < 175.0 && isAligned.getAsBoolean()) {
             feeder.setSpeed(1.0);
             intake.setSpeed(1.0);
         } else {

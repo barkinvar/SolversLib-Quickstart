@@ -23,8 +23,6 @@ public class Shooter extends SubsystemBase {
     private final VoltageSensor voltageSensor;
     private final TelemetryData telemetry;
 
-    private double error;
-
     // --- Motor Constants (YOU MUST VERIFY THESE) ---
     // Example: GoBilda Yellow Jacket 1:1 is 28.
     // Example: Rev HD Hex is 28.
@@ -45,6 +43,7 @@ public class Shooter extends SubsystemBase {
 
     // --- State Variables ---
     private double currentTargetVelocityTPS = 0; // We store target in TPS for the PID
+    private double currentVelocityTPS = 0;
     private double lastError = 0;
     private double cachedVoltage = 12.0;
 
@@ -81,10 +80,10 @@ public class Shooter extends SubsystemBase {
         }
 
         // --- 2. Get current velocity (Native TPS) ---
-        double currentVelocityTPS = shooterR.getVelocity();
+        currentVelocityTPS = shooterR.getVelocity();
 
         // --- 3. Calculate Error (in TPS) ---
-        error = currentTargetVelocityTPS - currentVelocityTPS;
+        double error = currentTargetVelocityTPS - currentVelocityTPS;
 
         // --- 4. Time Delta ---
         double dt = pidTimer.seconds();
@@ -137,7 +136,7 @@ public class Shooter extends SubsystemBase {
     }
 
     public double getError() {
-        return error;
+        return ticksToRPM(currentTargetVelocityTPS - currentVelocityTPS);
     }
 
     // --- Helper Conversion Methods ---

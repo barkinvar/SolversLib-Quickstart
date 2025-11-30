@@ -8,8 +8,6 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.util.TelemetryData;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
-
 import java.util.List;
 
 public class Vision extends SubsystemBase {
@@ -18,27 +16,23 @@ public class Vision extends SubsystemBase {
     private final TelemetryData telemetry;
 
     // --- Configuration Constants ---
-    // NOTE: User provided units in Meters (29.25 * 0.0254)
-    private static final double CAMERA_LENS_HEIGHT = 0.433; // Meters
-    private static final double TARGET_HEIGHT = 29.25 * 0.0254; // Meters
+    private static final double CAMERA_LENS_HEIGHT = 0.433;
+    private static final double TARGET_HEIGHT = 29.25 * 0.0254;
     private static final double CAMERA_MOUNT_ANGLE_DEGREES = 20.0;
 
-    // Low Pass Filter factor (0.0 - 1.0)
-    private static final double SMOOTHING_FACTOR = 0.2;
+    // Occlusion Handling:
+    // If a ball blocks the camera, we keep the last 'tx' and 'distance' for this many ms.
+    private static final long TARGET_MEMORY_MS = 250;
 
     // --- State Variables ---
     private double currentDistance = 0.0;
     private double currentTx = 0.0;
     private double currentTy = 0.0;
     private double currentTa = 0.0;
-    private boolean hasTarget = false;
 
-    // Filter: ID of the AprilTag to track. -1 means "Track Any"
+    private boolean isCurrentlyVisible = false;
+    private long lastValidTargetTime = 0;
     private int targetTagId = -1;
-
-    // Neural Network / Classification Results
-    private String detectedLabel = "None";
-    private double detectionConfidence = 0.0;
 
     public Vision(HardwareMap hardwareMap, TelemetryData telemetry) {
         this.telemetry = telemetry;
@@ -57,88 +51,76 @@ public class Vision extends SubsystemBase {
         LLStatus status = limelight.getStatus();
         LLResult result = limelight.getLatestResult();
 
+        boolean validFrameInput = false;
+        double rawTx = 0;
+        double rawTy = 0;
+        double rawTa = 0;
+
         if (result != null && result.isValid()) {
-
-            boolean validTargetFound = false;
-            double rawTx = 0;
-            double rawTy = 0;
-            double rawTa = 0;
-
-            // --- 1. AprilTag Filtering Logic ---
             List<LLResultTypes.FiducialResult> fiducials = result.getFiducialResults();
 
             if (targetTagId != -1) {
-                // strict mode: Only look for the specific ID
+                // Strict ID mode
                 for (LLResultTypes.FiducialResult tag : fiducials) {
                     if (tag.getFiducialId() == targetTagId) {
-                        // FIX: Use getTxnc() and getTync() for individual fiducials
                         rawTx = tag.getTargetXDegrees();
                         rawTy = tag.getTargetYDegrees();
                         rawTa = tag.getTargetArea();
-                        validTargetFound = true;
-                        break; // Stop looking once found
+                        validFrameInput = true;
+                        break;
                     }
                 }
             } else {
-                // Wildcard mode: Take the primary result (closest/largest)
-                // This could be an AprilTag OR a Neural Network detection depending on pipeline
+                // Wildcard mode
                 rawTx = result.getTx();
                 rawTy = result.getTy();
                 rawTa = result.getTa();
-                validTargetFound = true;
-            }
-
-            // --- 2. Neural Network Logic (Secondary) ---
-            // If we didn't find a specific tag, but we are in wildcard mode,
-            // check for game pieces (Detector Pipeline)
-            List<LLResultTypes.DetectorResult> detectorResults = result.getDetectorResults();
-            if (!detectorResults.isEmpty()) {
-                LLResultTypes.DetectorResult bestDetection = detectorResults.get(0);
-                detectedLabel = bestDetection.getClassName();
-                detectionConfidence = bestDetection.getConfidence();
-
-                // If we aren't hunting a specific AprilTag, and we see a game piece, track it
-                if (targetTagId == -1 && !fiducials.isEmpty() == false) {
-                    // Note: logic implies if we see NO tags, but we SEE a sample, we use sample data
-                    // Limelight 'result.getTx()' usually prioritizes the main target anyway.
+                if (Math.abs(rawTx) > 0.001 || Math.abs(rawTy) > 0.001) {
+                    validFrameInput = true;
                 }
-            } else {
-                detectedLabel = "None";
-                detectionConfidence = 0.0;
             }
+        }
 
-            // --- 3. Update State if Valid ---
-            if (validTargetFound) {
-                hasTarget = true;
+        // --- CORE LOGIC CHANGE ---
+        if (validFrameInput) {
+            // Case 1: We see the target RIGHT NOW.
+            isCurrentlyVisible = true;
+            lastValidTargetTime = System.currentTimeMillis();
 
-                // Distance Calculation (Tangent)
-                // d = (h2 - h1) / tan(a1 + a2)
-                double angleToGoalDegrees = CAMERA_MOUNT_ANGLE_DEGREES + rawTy;
-                double angleToGoalRadians = Math.toRadians(angleToGoalDegrees);
+            // Calculate Distance
+            double angleToGoalDegrees = CAMERA_MOUNT_ANGLE_DEGREES + rawTy;
+            double angleToGoalRadians = Math.toRadians(angleToGoalDegrees);
+            currentDistance = (TARGET_HEIGHT - CAMERA_LENS_HEIGHT) / Math.tan(angleToGoalRadians);
 
-                double calculatedDistance = (TARGET_HEIGHT - CAMERA_LENS_HEIGHT) / Math.tan(angleToGoalRadians);
-
-                // Apply Smoothing
-                currentDistance = (SMOOTHING_FACTOR * calculatedDistance) + ((1 - SMOOTHING_FACTOR) * currentDistance);
-
-                currentTx = rawTx;
-                currentTy = rawTy;
-                currentTa = rawTa;
-            } else {
-                hasTarget = false;
-            }
+            // Update Aiming Data directly
+            currentTx = rawTx;
+            currentTy = rawTy;
+            currentTa = rawTa;
 
         } else {
-            hasTarget = false;
+            // Case 2: We DO NOT see the target right now.
+            isCurrentlyVisible = false;
+
+            // Check how long it has been since we last saw it
+            long timeSinceLastSeen = System.currentTimeMillis() - lastValidTargetTime;
+
+            if (timeSinceLastSeen > TARGET_MEMORY_MS) {
+                // Case 2a: It's been too long (Target truly lost).
+                // Reset everything to 0 to prevent the robot from spinning at the last known speed forever.
+                currentTx = 0.0;
+                currentTy = 0.0;
+                currentDistance = 0.0;
+            }
+            // Case 2b: It has been LESS than 500ms (Ball blocking camera).
+            // Do NOTHING. We keep the old currentTx and currentDistance values.
+            // This effectively "freezes" the data during the shot.
         }
 
         // --- Telemetry ---
         telemetry.addData("Limelight", status.getName());
-        if (hasTarget) {
-            telemetry.addData("Target", "FOUND");
-            telemetry.addData("Target ID Filter", targetTagId == -1 ? "ANY" : targetTagId);
+        if (hasValidTarget()) {
+            telemetry.addData("Target", isCurrentlyVisible ? "LOCKED" : "CACHED (Occluded)");
             telemetry.addData("tx", currentTx);
-            telemetry.addData("ty", currentTy);
             telemetry.addData("Dist", currentDistance);
         } else {
             telemetry.addData("Target", "SEARCHING...");
@@ -147,15 +129,14 @@ public class Vision extends SubsystemBase {
 
     // --- Setters & Getters ---
 
-    /**
-     * Sets the AprilTag ID to look for.
-     *
-     * @param id The ID to track (e.g., 1, 2, 11, etc.). Set to -1 to track ANY target.
-     */
     public void setTargetTagId(int id) {
         this.targetTagId = id;
     }
 
+    /**
+     * Gets the horizontal offset from the crosshair to the target.
+     * WARNING: If the camera is occluded (blocked), this returns the LAST KNOWN value.
+     */
     public double getSteeringError() {
         return currentTx;
     }
@@ -164,12 +145,12 @@ public class Vision extends SubsystemBase {
         return currentDistance;
     }
 
+    /**
+     * @return true if the target is visible OR was visible within the memory threshold.
+     */
     public boolean hasValidTarget() {
-        return hasTarget;
-    }
-
-    public String getDetectedLabel() {
-        return detectedLabel;
+        // We consider the target "valid" if we see it, OR if we saw it recently.
+        return isCurrentlyVisible || (System.currentTimeMillis() - lastValidTargetTime < TARGET_MEMORY_MS);
     }
 
     public void setPipeline(int pipelineIndex) {
