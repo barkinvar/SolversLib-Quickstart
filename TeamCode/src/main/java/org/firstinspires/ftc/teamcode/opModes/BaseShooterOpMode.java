@@ -110,9 +110,6 @@ public abstract class BaseShooterOpMode extends CommandOpMode {
                         (alliance == Alliance.BLUE) ? 130.0 : 50.0, alliance
                 ).alongWith(new RunShooterDistanceCommand(mShooter, mVision), new ShootFeedCommand(mFeeder, mIntake, mShooter, mDrive::isAligned)));
 
-        controller.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
-                .whenHeld(new RunFeederCommand(mFeeder));
-
         controller.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
                 .whenHeld(new RunIntakeCommand(mIntake));
     }
