@@ -86,6 +86,12 @@ public abstract class BaseShooterOpMode extends CommandOpMode {
         // 5. Bind Buttons
         bindButtons();
 
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
         follower.setPose(new Pose(56.000, 8.000, Math.toRadians(90))); //TODO set it in auto
     }
 
