@@ -73,8 +73,8 @@ public abstract class BaseShooterOpMode extends CommandOpMode {
         int targetTagId = (alliance == Alliance.BLUE) ? 20 : 24;
         mVision.setTargetTagId(targetTagId);
 
-        shouldInvertX = alliance == Alliance.BLUE ? 1 : -1;
-        shouldInvertY = alliance == Alliance.BLUE ? 1 : -1;
+        shouldInvertX = alliance == Alliance.BLUE ? -1 : 1;
+        shouldInvertY = alliance == Alliance.BLUE ? -1 : 1;
 
         // 3. Register
 
