@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.Pose;
 import com.seattlesolvers.solverslib.command.CommandOpMode;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
@@ -8,9 +9,7 @@ import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 import com.seattlesolvers.solverslib.util.TelemetryData;
 
 import org.firstinspires.ftc.teamcode.commands.AlignToTagCommand;
-import org.firstinspires.ftc.teamcode.commands.RunFeederCommand;
 import org.firstinspires.ftc.teamcode.commands.RunIntakeCommand;
-import org.firstinspires.ftc.teamcode.commands.RunShooterCommand;
 import org.firstinspires.ftc.teamcode.commands.RunShooterDistanceCommand;
 import org.firstinspires.ftc.teamcode.commands.TeleopDriveCommand;
 import org.firstinspires.ftc.teamcode.commands.ShootFeedCommand;
@@ -51,6 +50,7 @@ public abstract class BaseShooterOpMode extends CommandOpMode {
     protected  Drive mDrive;
     protected Led mLed;
     protected GamepadEx controller;
+    protected int shouldInvertX, shouldInvertY;
 
     @Override
     public void initialize() {
@@ -73,6 +73,11 @@ public abstract class BaseShooterOpMode extends CommandOpMode {
         int targetTagId = (alliance == Alliance.BLUE) ? 20 : 24;
         mVision.setTargetTagId(targetTagId);
 
+        shouldInvertX = alliance == Alliance.BLUE ? 1 : -1;
+        shouldInvertY = alliance == Alliance.BLUE ? 1 : -1;
+
+        // 3. Register
+
         register(mShooter, mIntake, mFeeder, mVision, mDrive, mLed);
 
         // 4. Initialize Controller
@@ -80,6 +85,8 @@ public abstract class BaseShooterOpMode extends CommandOpMode {
 
         // 5. Bind Buttons
         bindButtons();
+
+        follower.setPose(new Pose(56.000, 8.000, Math.toRadians(90))); //TODO set it in auto
     }
 
     @Override
@@ -98,14 +105,14 @@ public abstract class BaseShooterOpMode extends CommandOpMode {
     }
 
     private void bindButtons() {
-        mDrive.setDefaultCommand(new TeleopDriveCommand(mDrive, () -> -gamepad1.left_stick_y, () -> -gamepad1.left_stick_x, () -> -gamepad1.right_stick_x));
+        mDrive.setDefaultCommand(new TeleopDriveCommand(mDrive, () -> -gamepad1.left_stick_y * shouldInvertY, () -> -gamepad1.left_stick_x * shouldInvertX, () -> -gamepad1.right_stick_x));
 
         controller.getGamepadButton(GamepadKeys.Button.A)
                 .whenHeld(new AlignToTagCommand(
                         mVision,
                         mDrive,
-                        () -> -gamepad1.left_stick_y,
-                        () -> -gamepad1.left_stick_x,
+                        () -> -gamepad1.left_stick_y * shouldInvertY,
+                        () -> -gamepad1.left_stick_x * shouldInvertX,
                         (alliance == Alliance.BLUE) ? 130.0 : 50.0, alliance
                 ).alongWith(new RunShooterDistanceCommand(mShooter, mVision), new ShootFeedCommand(mFeeder, mIntake, mShooter, mLed, mDrive::isAligned)));
 
