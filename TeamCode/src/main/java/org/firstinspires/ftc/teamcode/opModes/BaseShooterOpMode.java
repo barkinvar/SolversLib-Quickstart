@@ -84,14 +84,9 @@ public abstract class BaseShooterOpMode extends CommandOpMode {
         // 1. CRITICAL: Read Controller Inputs
         controller.readButtons();
 
-        // Only manual drive if NOT aligning (holding X)
-        // Note: Command-based usually handles this via 'requirements', but this manual check is safe.
-        if (!gamepad1.x) {
-            follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, false);
-        }
-
         // 2. Run Scheduler
         super.run();
+        follower.update();
 
         // 3. Update Telemetry
         telemetryData.update();

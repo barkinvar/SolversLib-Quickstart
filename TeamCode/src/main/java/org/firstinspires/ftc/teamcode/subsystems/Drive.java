@@ -13,7 +13,6 @@ public class Drive extends SubsystemBase {
     }
     @Override
     public void periodic() {
-        mFollower.update();
     }
 
     public void joystickDrive(double forward, double strafe, double turn) {
