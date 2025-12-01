@@ -60,7 +60,7 @@ public class AlignToTagCommand extends CommandBase {
 
             double tx = vision.getSteeringError();
 
-            if(vision.getDistance() > 3.25) {
+            if(vision.getDistance() > 2.7) {
                 tx += alliance == BaseShooterOpMode.Alliance.BLUE ? 4.0 : -4.0;
             }
 
