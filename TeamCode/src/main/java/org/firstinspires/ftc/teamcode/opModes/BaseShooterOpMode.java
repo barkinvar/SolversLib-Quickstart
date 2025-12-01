@@ -117,8 +117,8 @@ public abstract class BaseShooterOpMode extends CommandOpMode {
                 .whenHeld(new AlignToTagCommand(
                         mVision,
                         mDrive,
-                        () -> -gamepad1.left_stick_y * shouldInvertY * 0.35,
-                        () -> -gamepad1.left_stick_x * shouldInvertX * 0.35,
+                        () -> -gamepad1.left_stick_y * shouldInvertY * 0.3,
+                        () -> -gamepad1.left_stick_x * shouldInvertX * 0.3,
                         (alliance == Alliance.BLUE) ? 130.0 : 50.0, alliance
                 ).alongWith(new RunShooterDistanceCommand(mShooter, mVision), new ShootFeedCommand(mFeeder, mIntake, mShooter, mLed, mDrive::isAligned)));
 

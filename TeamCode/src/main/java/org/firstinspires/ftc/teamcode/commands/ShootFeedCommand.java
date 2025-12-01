@@ -46,7 +46,7 @@ public class ShootFeedCommand extends CommandBase {
             feeder.setSpeed(1.0);
             intake.setSpeed(1.0);
             led.setState(Led.RobotState.SHOOTER_READY);
-        } else if (shooter.getTargetVelocity() > 3000.0 && Math.abs(shooter.getError()) < 125.0 && isAligned.getAsBoolean()) {
+        } else if (shooter.getTargetVelocity() > 3000.0 && Math.abs(shooter.getError()) < 100.0 && isAligned.getAsBoolean()) {
             feeder.setSpeed(1.0);
             intake.setSpeed(1.0);
             led.setState(Led.RobotState.SHOOTER_READY);
