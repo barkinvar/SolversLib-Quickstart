@@ -15,8 +15,8 @@ public class AlignToTagCommand extends CommandBase {
     private final double targetHeadingRadians;
 
     // --- Tuning Constants ---
-    private static final double Kp = 0.0275;
-    private static final double Kd = 0.002;
+    private static final double Kp = 0.025;
+    private static final double Kd = 0.0025;
     private static final double MAX_VISION_SPEED = 1.0;
 
     private static final double SCAN_SPEED = 1.0;

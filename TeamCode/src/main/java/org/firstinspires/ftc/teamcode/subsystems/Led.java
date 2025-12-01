@@ -10,9 +10,6 @@ public class Led extends SubsystemBase {
     private final Servo ledController;
     private RobotState targetState = RobotState.OFF;
 
-    // Hardware state tracking to prevent unnecessary writes
-    private double lastPwm = -1.0;
-
     // For animations
     private final ElapsedTime timer = new ElapsedTime();
     private boolean isAnimating = false;
@@ -25,9 +22,9 @@ public class Led extends SubsystemBase {
         OFF(0.0),             // Black
 
         // Solid Colors (from chart)
-        SHOOTER_IDLE(0.277),   // Red
-        SHOOTER_WARMING_UP(0.500), // Blue (Chart says Green is 0.5, Blue is 0.611. Adjusted below)
-        SHOOTER_READY(0.444),  // Green (Chart says Sage 0.444, Green 0.5)
+        SHOOTER_IDLE(0.28),   // Red
+        SHOOTER_WARMING_UP(0.611), // Blue (Chart says Green is 0.5, Blue is 0.611. Adjusted below)
+        SHOOTER_READY(0.480),  // Green (Chart says Sage 0.444, Green 0.5)
 
         // Animation States
         RGB_CYCLE(0.0);
@@ -94,10 +91,6 @@ public class Led extends SubsystemBase {
      * Internal helper to write to the servo only if the value has changed.
      */
     private void writeHardware(double pwm) {
-        // Check equality with a small tolerance
-        if (Math.abs(pwm - lastPwm) > 0.001) {
-            ledController.setPosition(pwm);
-            lastPwm = pwm;
-        }
+        ledController.setPosition(pwm);
     }
 }
