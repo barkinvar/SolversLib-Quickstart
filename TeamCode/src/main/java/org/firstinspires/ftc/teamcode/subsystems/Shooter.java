@@ -139,6 +139,9 @@ public class Shooter extends SubsystemBase {
         return ticksToRPM(currentTargetVelocityTPS - currentVelocityTPS);
     }
 
+    public double getTargetVelocity() {
+        return ticksToRPM(currentTargetVelocityTPS);
+    }
     // --- Helper Conversion Methods ---
 
     private double rpmToTicks(double rpm) {

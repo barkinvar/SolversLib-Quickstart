@@ -18,6 +18,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Feeder;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
+import org.firstinspires.ftc.teamcode.subsystems.Led;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
 
@@ -48,6 +49,7 @@ public abstract class BaseShooterOpMode extends CommandOpMode {
     protected Feeder mFeeder;
     protected Vision mVision;
     protected  Drive mDrive;
+    protected Led mLed;
     protected GamepadEx controller;
 
     @Override
@@ -65,12 +67,13 @@ public abstract class BaseShooterOpMode extends CommandOpMode {
         mFeeder = new Feeder(hardwareMap);
         mVision = new Vision(hardwareMap, telemetryData);
         mDrive = new Drive(follower);
+        mLed = new Led(hardwareMap);
 
         // LOGIC: Determine Tag ID based on the alliance variable
         int targetTagId = (alliance == Alliance.BLUE) ? 20 : 24;
         mVision.setTargetTagId(targetTagId);
 
-        register(mShooter, mIntake, mFeeder, mVision, mDrive);
+        register(mShooter, mIntake, mFeeder, mVision, mDrive, mLed);
 
         // 4. Initialize Controller
         controller = new GamepadEx(gamepad1);
@@ -81,6 +84,7 @@ public abstract class BaseShooterOpMode extends CommandOpMode {
 
     @Override
     public void run() {
+
         // 1. CRITICAL: Read Controller Inputs
         controller.readButtons();
 
@@ -103,7 +107,7 @@ public abstract class BaseShooterOpMode extends CommandOpMode {
                         () -> -gamepad1.left_stick_y,
                         () -> -gamepad1.left_stick_x,
                         (alliance == Alliance.BLUE) ? 130.0 : 50.0, alliance
-                ).alongWith(new RunShooterDistanceCommand(mShooter, mVision), new ShootFeedCommand(mFeeder, mIntake, mShooter, mDrive::isAligned)));
+                ).alongWith(new RunShooterDistanceCommand(mShooter, mVision), new ShootFeedCommand(mFeeder, mIntake, mShooter, mLed, mDrive::isAligned)));
 
         controller.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
                 .whenHeld(new RunIntakeCommand(mIntake));

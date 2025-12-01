@@ -24,7 +24,7 @@ public class RunShooterDistanceCommand extends CommandBase {
     private static final double MAX_RPM = 2900.0;
 
     private static final double LONG_RANGE_CUTOFF = 3.25;
-    private static final double LONG_RANGE_RPM = 3300.0;
+    private static final double LONG_RANGE_RPM = 3400.0;
     private static final double FALLBACK_RPM = 2500.0;
 
     public RunShooterDistanceCommand(Shooter shooter, Vision vision) {
