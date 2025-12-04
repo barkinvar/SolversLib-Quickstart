@@ -1,13 +1,16 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
+import static org.firstinspires.ftc.teamcode.subsystems.Led.RobotState.SHOOTER_IDLE;
+
 import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.Pose;
 import com.seattlesolvers.solverslib.command.CommandOpMode;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
+import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 import com.seattlesolvers.solverslib.util.TelemetryData;
 
+import org.firstinspires.ftc.teamcode.PoseStorage;
 import org.firstinspires.ftc.teamcode.commands.AlignToTagCommand;
 import org.firstinspires.ftc.teamcode.commands.RunIntakeCommand;
 import org.firstinspires.ftc.teamcode.commands.RunShooterDistanceCommand;
@@ -92,12 +95,19 @@ public abstract class BaseShooterOpMode extends CommandOpMode {
             Thread.currentThread().interrupt();
         }
 
-        follower.setPose(new Pose(56.000, 8.000, Math.toRadians(90))); //TODO set it in auto
+        follower.setPose(PoseStorage.currentPose);
+        follower.startTeleOpDrive();
+
+        schedule(new InstantCommand(() -> mLed.setState(SHOOTER_IDLE)));
+    }
+
+    @Override
+    public void initialize_loop() {
+        mLed.periodic();
     }
 
     @Override
     public void run() {
-
         // 1. CRITICAL: Read Controller Inputs
         controller.readButtons();
 
@@ -107,7 +117,6 @@ public abstract class BaseShooterOpMode extends CommandOpMode {
 
         // 3. Update Telemetry
         telemetryData.update();
-        telemetry.update();
     }
 
     private void bindButtons() {

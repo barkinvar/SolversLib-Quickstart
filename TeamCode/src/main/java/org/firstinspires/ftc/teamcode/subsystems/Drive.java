@@ -11,9 +11,6 @@ public class Drive extends SubsystemBase {
     public Drive(Follower follower) {
         mFollower = follower;
     }
-    @Override
-    public void periodic() {
-    }
 
     public void joystickDrive(double forward, double strafe, double turn) {
         mFollower.setTeleOpDrive(forward, strafe, turn, false);

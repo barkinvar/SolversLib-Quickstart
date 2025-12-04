@@ -44,6 +44,8 @@ public class AlignToTagCommand extends CommandBase {
         previousTx = 0;
         lockedScanDirection = 0; // Reset on start
         drive.aligned = false;
+
+        drive.startTeleopDrive();
     }
 
     @Override
@@ -61,7 +63,7 @@ public class AlignToTagCommand extends CommandBase {
 
             double tx = vision.getSteeringError();
 
-            if(vision.getDistance() > 2.7) {
+            if(vision.getDistance() > 2.65) {
                 tx += alliance == BaseShooterOpMode.Alliance.BLUE ? -3.0 : 3.0;
             }
 

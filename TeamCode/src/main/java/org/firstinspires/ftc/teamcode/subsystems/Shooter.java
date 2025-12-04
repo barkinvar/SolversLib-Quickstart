@@ -33,7 +33,7 @@ public class Shooter extends SubsystemBase {
     // --- PIDF Constants ---
     // Note: Since we are controlling in TPS internally, these values might need
     // retuning if you were previously tuning based on a different unit scale.
-    public static double Kp = 0.002;
+    public static double Kp = 0.002; //TODO
     public static double Kd = 0.0;
     public static double Kf = 0.0005;
 
