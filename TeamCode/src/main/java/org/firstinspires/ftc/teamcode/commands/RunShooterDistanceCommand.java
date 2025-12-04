@@ -21,7 +21,7 @@ public class RunShooterDistanceCommand extends CommandBase {
     private static final double MAX_DIST = 2.35;
 
     private static final double MIN_RPM = 2675.0;
-    private static final double MAX_RPM = 2850.0;
+    private static final double MAX_RPM = 2825.0;
 
 
     private static final double LONG_RANGE_CUTOFF = 2.65;
