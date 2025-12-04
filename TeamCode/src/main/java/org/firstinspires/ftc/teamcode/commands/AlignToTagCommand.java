@@ -15,8 +15,8 @@ public class AlignToTagCommand extends CommandBase {
     private final double targetHeadingRadians;
 
     // --- Tuning Constants ---
-    private static final double Kp = 0.02;
-    private static final double Kd = 0.0015;
+    private static final double Kp = 0.025;
+    private static final double Kd = 0.00125;
 
     private static final double MAX_VISION_SPEED = 1.0;
 
@@ -73,7 +73,7 @@ public class AlignToTagCommand extends CommandBase {
             double rawTurn = -(Kp * tx + Kd * derivative);
             turnPower = Math.max(-MAX_VISION_SPEED, Math.min(MAX_VISION_SPEED, rawTurn));
 
-            drive.aligned = Math.abs(tx) < 2.75;
+            drive.aligned = Math.abs(tx) < 2.65;
 
         } else {
             // ===========================================

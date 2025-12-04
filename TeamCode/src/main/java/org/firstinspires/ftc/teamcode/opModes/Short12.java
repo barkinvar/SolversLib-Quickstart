@@ -54,7 +54,7 @@ public abstract class Short12 extends CommandOpMode {
     private Led mLed;
 
     // Path chains
-    private PathChain path1, path2, path3, path4, path5, path6, path7, path8, path9;
+    private PathChain Path1, Path2, Path3, Path4, Path5, Path6, Path7, Path8, Path9;
 
     public Short12(Alliance alliance) {
         this.alliance = alliance;
@@ -114,75 +114,84 @@ public abstract class Short12 extends CommandOpMode {
     // ---------------------------------------------------------------------------------------------
 
     public void buildPaths() {
-        path1 = follower.pathBuilder()
+        Path1 = follower
+                .pathBuilder()
                 .addPath(
-                        new BezierLine(point(26.341, 131.049), point(58.000, 84.000))
+                        new BezierLine(new Pose(26.341, 131.049), new Pose(58.000, 84.000))
                 )
-                .setLinearHeadingInterpolation(radians(144), radians(131))
+                .setLinearHeadingInterpolation(Math.toRadians(144), Math.toRadians(133))
                 .build();
 
-        path2 = follower.pathBuilder()
+        Path2 = follower
+                .pathBuilder()
                 .addPath(
-                        new BezierLine(point(58.000, 84.000), point(16.000, 84.000))
+                        new BezierLine(new Pose(58.000, 84.000), new Pose(16.000, 84.000))
                 )
-                .setLinearHeadingInterpolation(radians(132), radians(180), 0.3)
+                .setLinearHeadingInterpolation(Math.toRadians(133), Math.toRadians(180))
                 .build();
 
-        path3 = follower.pathBuilder()
+        Path3 = follower
+                .pathBuilder()
                 .addPath(
-                        new BezierLine(point(16.000, 84.000), point(16.000, 76.000))
+                        new BezierLine(new Pose(16.000, 84.000), new Pose(15.000, 76.000))
                 )
-                .setLinearHeadingInterpolation(radians(180), radians(90))
+                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(90))
                 .build();
 
-        path4 = follower.pathBuilder()
+        Path4 = follower
+                .pathBuilder()
                 .addPath(
-                        new BezierLine(point(16.000, 76.000), point(58.000, 84.000))
+                        new BezierLine(new Pose(15.000, 76.000), new Pose(58.000, 84.000))
                 )
-                .setLinearHeadingInterpolation(radians(90), radians(131))
+                .setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(133))
                 .build();
 
-        path5 = follower.pathBuilder()
+        Path5 = follower
+                .pathBuilder()
                 .addPath(
                         new BezierCurve(
-                                point(58.000, 84.000),
-                                point(63.000, 50.000),
-                                point(16.000, 60.000)
+                                new Pose(58.000, 84.000),
+                                new Pose(63.000, 53.000),
+                                new Pose(12.000, 60.000)
                         )
                 )
-                .setLinearHeadingInterpolation(radians(131), radians(180), 0.5)
+                .setLinearHeadingInterpolation(Math.toRadians(133), Math.toRadians(180))
                 .build();
 
-        path6 = follower.pathBuilder()
+        Path6 = follower
+                .pathBuilder()
                 .addPath(
-                        new BezierLine(point(16.000, 60.000), point(58.000, 84.000))
+                        new BezierLine(new Pose(12.000, 60.000), new Pose(58.000, 84.000))
                 )
-                .setLinearHeadingInterpolation(radians(180), radians(131))
+                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(133))
                 .build();
 
-        path7 = follower.pathBuilder()
+        Path7 = follower
+                .pathBuilder()
                 .addPath(
                         new BezierCurve(
-                                point(58.000, 84.000),
-                                point(63.000, 25.000),
-                                point(16.000, 36.000)
+                                new Pose(58.000, 84.000),
+                                new Pose(63.000, 28.000),
+                                new Pose(12.000, 36.000)
                         )
                 )
-                .setLinearHeadingInterpolation(radians(131), radians(180), 0.5)
+                .setLinearHeadingInterpolation(Math.toRadians(133), Math.toRadians(180))
                 .build();
 
-        path8 = follower.pathBuilder()
+        Path8 = follower
+                .pathBuilder()
                 .addPath(
-                        new BezierLine(point(16.000, 36.000), point(58.000, 84.000))
+                        new BezierLine(new Pose(12.000, 36.000), new Pose(58.000, 84.000))
                 )
-                .setLinearHeadingInterpolation(radians(180), radians(131))
+                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(131))
                 .build();
 
-        path9 = follower.pathBuilder()
+        Path9 = follower
+                .pathBuilder()
                 .addPath(
-                        new BezierLine(point(58.000, 84.000), point(32.000, 70.000))
+                        new BezierLine(new Pose(58.000, 84.000), new Pose(32.000, 70.000))
                 )
-                .setLinearHeadingInterpolation(radians(131), radians(180))
+                .setLinearHeadingInterpolation(Math.toRadians(131), Math.toRadians(180))
                 .build();
     }
 
@@ -221,20 +230,20 @@ public abstract class Short12 extends CommandOpMode {
                 new InstantCommand(() -> mLed.setState(SHOOTER_IDLE)),
                 new RunCommand(() -> follower.update()),
                 new SequentialCommandGroup(
-                        new FollowPathCommand(follower, path1),
-                        alignAndShoot().withTimeout(4000),
-                        new RunIntakeCommand(mIntake).raceWith(new FollowPathCommand(follower, path2)),
-                        new FollowPathCommand(follower, path3),
-                        new WaitCommand(1000),
-                        new FollowPathCommand(follower, path4).alongWith(new InstantCommand(() -> mShooter.setTargetVelocity(2700.0))),
-                        alignAndShoot().withTimeout(4000),
-                        new RunIntakeCommand(mIntake).raceWith(new FollowPathCommand(follower, path5)),
-                        new FollowPathCommand(follower, path6).alongWith(new InstantCommand(() -> mShooter.setTargetVelocity(2700.0))),
-                        alignAndShoot().withTimeout(4000),
-                        new RunIntakeCommand(mIntake).raceWith(new FollowPathCommand(follower, path7)),
-                        new FollowPathCommand(follower, path8).alongWith(new InstantCommand(() -> mShooter.setTargetVelocity(2700.0))),
-                        alignAndShoot().withTimeout(4000),
-                        new FollowPathCommand(follower, path9)
+                        new FollowPathCommand(follower, Path1).alongWith(new WaitCommand(1000).andThen(new InstantCommand(() -> mShooter.setTargetVelocity(2700.0)))),
+                        alignAndShoot().withTimeout(2750),
+                        new RunIntakeCommand(mIntake).raceWith(new FollowPathCommand(follower, Path2)),
+                        new FollowPathCommand(follower, Path3),
+                        new WaitCommand(750),
+                        new FollowPathCommand(follower, Path4).alongWith(new InstantCommand(() -> mShooter.setTargetVelocity(2700.0))),
+                        alignAndShoot().withTimeout(2750),
+                        new RunIntakeCommand(mIntake).raceWith(new FollowPathCommand(follower, Path5)),
+                        new FollowPathCommand(follower, Path6).alongWith(new WaitCommand(500).andThen(new InstantCommand(() -> mShooter.setTargetVelocity(2700.0)))),
+                        alignAndShoot().withTimeout(2750),
+                        new RunIntakeCommand(mIntake).raceWith(new FollowPathCommand(follower, Path6)),
+                        new FollowPathCommand(follower, Path8).alongWith(new WaitCommand(1000).andThen(new InstantCommand(() -> mShooter.setTargetVelocity(2700.0)))),
+                        alignAndShoot().withTimeout(2750),
+                        new FollowPathCommand(follower, Path9)
                 )
         );
     }
