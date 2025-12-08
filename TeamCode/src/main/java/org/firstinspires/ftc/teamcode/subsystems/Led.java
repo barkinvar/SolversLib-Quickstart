@@ -52,6 +52,9 @@ public class Led extends SubsystemBase {
         this.targetState = state;
         this.isAnimating = newIsAnimating;
     }
+    public RobotState getState() {
+        return targetState;
+    }
 
     @Override
     public void periodic() {
@@ -70,18 +73,25 @@ public class Led extends SubsystemBase {
         double time = timer.seconds();
 
         if (targetState == RobotState.RGB_CYCLE) {
-            // Based on the chart, the spectrum runs from Red (0.277) to Violet (0.722).
-            // We linearly ramp between these two values to access the full gradient.
+            double minPwm = 0.28; // Red
+            double maxPwm = 0.72; // Violet
+            double cycleTime = 4.0; // Increased time slightly since we now go up AND down
 
-            double minPwm = 0.277; // Red
-            double maxPwm = 0.722; // Violet
-            double cycleTime = 2.0; // Seconds for one full rainbow loop
+            // 1. Calculate progress from 0.0 to 1.0 repeats
+            double input = (time % cycleTime) / cycleTime;
 
-            // Calculate progress from 0.0 to 1.0 that repeats every cycleTime
-            double progress = (time % cycleTime) / cycleTime;
+            // 2. Convert to "Ping-Pong" (0.0 -> 1.0 -> 0.0)
+            double phase;
+            if (input <= 0.5) {
+                // First half: Ramp Up (0.0 to 1.0)
+                phase = input * 2.0;
+            } else {
+                // Second half: Ramp Down (1.0 to 0.0)
+                phase = (1.0 - input) * 2.0;
+            }
 
-            // Map progress to the PWM range
-            double targetPwm = minPwm + (progress * (maxPwm - minPwm));
+            // 3. Map the ping-pong phase to the PWM range
+            double targetPwm = minPwm + (phase * (maxPwm - minPwm));
 
             writeHardware(targetPwm);
         }

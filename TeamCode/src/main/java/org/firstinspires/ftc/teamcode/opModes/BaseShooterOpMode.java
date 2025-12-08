@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
+import static org.firstinspires.ftc.teamcode.subsystems.Led.RobotState.RGB_CYCLE;
 import static org.firstinspires.ftc.teamcode.subsystems.Led.RobotState.SHOOTER_IDLE;
 
 import com.pedropathing.follower.Follower;
@@ -12,6 +13,7 @@ import com.seattlesolvers.solverslib.util.TelemetryData;
 
 import org.firstinspires.ftc.teamcode.PoseStorage;
 import org.firstinspires.ftc.teamcode.commands.AlignToTagCommand;
+import org.firstinspires.ftc.teamcode.commands.EmergencyCommand;
 import org.firstinspires.ftc.teamcode.commands.RunIntakeCommand;
 import org.firstinspires.ftc.teamcode.commands.RunShooterDistanceCommand;
 import org.firstinspires.ftc.teamcode.commands.TeleopDriveCommand;
@@ -98,7 +100,7 @@ public abstract class BaseShooterOpMode extends CommandOpMode {
         follower.setPose(PoseStorage.currentPose);
         follower.startTeleOpDrive();
 
-        schedule(new InstantCommand(() -> mLed.setState(SHOOTER_IDLE)));
+        mLed.setState(RGB_CYCLE);
     }
 
     @Override
@@ -108,6 +110,9 @@ public abstract class BaseShooterOpMode extends CommandOpMode {
 
     @Override
     public void run() {
+        if(mLed.getState() == RGB_CYCLE) {
+            mLed.setState(SHOOTER_IDLE);
+        }
         // 1. CRITICAL: Read Controller Inputs
         controller.readButtons();
 
@@ -130,6 +135,12 @@ public abstract class BaseShooterOpMode extends CommandOpMode {
                         () -> -gamepad1.left_stick_x * shouldInvertX * 0.3,
                         (alliance == Alliance.BLUE) ? 130.0 : 50.0, alliance
                 ).alongWith(new RunShooterDistanceCommand(mShooter, mVision), new ShootFeedCommand(mFeeder, mIntake, mShooter, mLed, mDrive::isAligned)));
+
+        controller.getGamepadButton(GamepadKeys.Button.DPAD_UP)
+                .whenHeld(new EmergencyCommand(mFeeder,mIntake,mShooter));
+
+        controller.getGamepadButton(GamepadKeys.Button.START)
+                .whenHeld(new InstantCommand(() -> mDrive.resetHeading()));
 
         controller.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
                 .whenHeld(new RunIntakeCommand(mIntake));

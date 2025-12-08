@@ -39,7 +39,7 @@ import org.firstinspires.ftc.teamcode.opModes.BaseShooterOpMode.Alliance;
  * Contains all auto logic for Blue and Red.
  * Extend this class and pass the Alliance in the constructor to create the OpMode.
  */
-public abstract class Short12 extends CommandOpMode {
+public abstract class Long9 extends CommandOpMode {
 
     protected final Alliance alliance;
 
@@ -55,21 +55,16 @@ public abstract class Short12 extends CommandOpMode {
     private Led mLed;
 
     // Path chains
-    private PathChain Path1, Path2, Path3, Path4, Path5, Path6, Path7, Path8, Path9;
+    private PathChain Path1, Path2, Path3, Path4, Path5, Path6;
 
-    public Short12(Alliance alliance) {
+    public Long9(Alliance alliance) {
         this.alliance = alliance;
     }
 
     // ---------------------------------------------------------------------------------------------
-    // MIRRORING HELPERS (Moved from BaseAuto)
+    // MIRRORING HELPERS
     // ---------------------------------------------------------------------------------------------
 
-    /**
-     * Creates a Pose based on the alliance.
-     * If RED, it flips the X coordinate (144 - x) and mirrors the heading (180 - heading).
-     * Input heading is expected in DEGREES.
-     */
     public Pose pose(double x, double y, double headingDeg) {
         if (alliance == Alliance.RED) {
             double mirroredX = 144.0 - x;
@@ -79,10 +74,6 @@ public abstract class Short12 extends CommandOpMode {
         return new Pose(x, y, Math.toRadians(headingDeg));
     }
 
-    /**
-     * Creates a Point (Pose without heading) for Bezier Control Points.
-     * If RED, it flips the X coordinate.
-     */
     public Pose point(double x, double y) {
         if (alliance == Alliance.RED) {
             return new Pose(144.0 - x, y);
@@ -90,9 +81,6 @@ public abstract class Short12 extends CommandOpMode {
         return new Pose(x, y);
     }
 
-    /**
-     * Converts degrees to radians, mirroring the angle if Alliance is RED.
-     */
     public double radians(double degrees) {
         if (alliance == Alliance.RED) {
             return Math.toRadians(180.0 - degrees);
@@ -100,9 +88,6 @@ public abstract class Short12 extends CommandOpMode {
         return Math.toRadians(degrees);
     }
 
-    /**
-     * Returns the heading in DEGREES, mirrored if RED.
-     */
     public double degrees(double degrees) {
         if (alliance == Alliance.RED) {
             return 180.0 - degrees;
@@ -115,131 +100,94 @@ public abstract class Short12 extends CommandOpMode {
     // ---------------------------------------------------------------------------------------------
     public void buildPaths() {
 
+        // Path1: Start (57, 9) -> Shoot Position (57, 15)
         Path1 = follower
                 .pathBuilder()
                 .addPath(
                         new BezierLine(
-                                pose(26.341, 131.049, 144),
-                                pose(57.000, 84.000, 134)
-                        )
-                )
-                .setLinearHeadingInterpolation(
-                        radians(144),
-                        radians(134)
-                )
-                .build();
-
-        Path2 = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierLine(
-                                pose(57.000, 84.000, 134),
-                                pose(19.000, 84.500, 180)
-                        )
-                )
-                .setLinearHeadingInterpolation(
-                        radians(134),
-                        radians(180), 0.1
-                )
-                .build();
-
-        Path3 = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierCurve(
-                                point(19.000, 84.500),
-                                point(23.000, 80.000),
-                                point(17.000, 76.000)
-                        )
-                )
-                .setLinearHeadingInterpolation(
-                        radians(180),
-                        radians(90)
-                )
-                .build();
-
-        Path4 = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierLine(
-                                pose(17.000, 76.000, 90),
-                                pose(57.000, 84.000, 134)
+                                pose(57.000, 9.000, 90),
+                                pose(57.000, 15.000, 112)
                         )
                 )
                 .setLinearHeadingInterpolation(
                         radians(90),
-                        radians(134)
+                        radians(112)
                 )
                 .build();
 
-        Path5 = follower
+        // Path2: Shoot Position -> Intake Sample 1 (16, 35.5)
+        Path2 = follower
                 .pathBuilder()
                 .addPath(
                         new BezierCurve(
-                                pose(57.000, 84.000, 134),
-                                point(63.000, 53.000),
+                                pose(57.000, 15.000, 112),
+                                point(59.000, 33.500),
+                                pose(12.000, 35.500, 180)
+                        )
+                )
+                .setLinearHeadingInterpolation(
+                        radians(112),
+                        radians(180)
+                )
+                .build();
+
+        // Path3: Intake Sample 1 -> Shoot Position (57, 21)
+        Path3 = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                pose(12.000, 35.500, 180),
+                                pose(57.000, 21.000, 114)
+                        )
+                )
+                .setLinearHeadingInterpolation(
+                        radians(180),
+                        radians(114)
+                )
+                .build();
+
+        // Path4: Shoot Position -> Intake Sample 2 (12, 60)
+        Path4 = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                pose(57.000, 21.000, 114),
+                                point(59.000, 60.000),
                                 pose(12.000, 60.000, 180)
                         )
                 )
                 .setLinearHeadingInterpolation(
-                        radians(134),
-                        radians(180), 0.5
+                        radians(114),
+                        radians(180)
                 )
                 .build();
 
-        Path6 = follower
+        // Path5: Intake Sample 2 -> Shoot Position (57, 21)
+        Path5 = follower
                 .pathBuilder()
                 .addPath(
                         new BezierLine(
                                 pose(12.000, 60.000, 180),
-                                pose(57.000, 84.000, 134)
+                                pose(57.000, 21.000, 114)
                         )
                 )
                 .setLinearHeadingInterpolation(
                         radians(180),
-                        radians(134)
+                        radians(114)
                 )
                 .build();
 
-        Path7 = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierCurve(
-                                pose(57.000, 84.000, 134),
-                                point(63.000, 30.000),
-                                pose(12.000, 36.000, 180)
-                        )
-                )
-                .setLinearHeadingInterpolation(
-                        radians(134),
-                        radians(180), 0.5
-                )
-                .build();
-
-        Path8 = follower
+        // Path6: Park / End (32, 40)
+        Path6 = follower
                 .pathBuilder()
                 .addPath(
                         new BezierLine(
-                                pose(12.000, 36.000, 180),
-                                pose(57.000, 84.000, 131)
+                                pose(57.000, 21.000, 114),
+                                pose(32.000, 40.000, 180)
                         )
                 )
                 .setLinearHeadingInterpolation(
-                        radians(180),
-                        radians(131)
-                )
-                .build();
-
-        Path9 = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierLine(
-                                pose(57.000, 84.000, 131),
-                                pose(32.000, 70.000, 180)
-                        )
-                )
-                .setLinearHeadingInterpolation(
-                        radians(131),
+                        radians(114),
                         radians(180)
                 )
                 .build();
@@ -273,27 +221,40 @@ public abstract class Short12 extends CommandOpMode {
             Thread.currentThread().interrupt();
         }
 
-        // Initialize Follower with the mirrored start pose
-        follower.setStartingPose(pose(26.341, 131.049, 144));
+        // Initialize Follower with the start pose of Path 1
+        follower.setStartingPose(pose(57.000, 9.000, 90));
         mLed.setState(RGB_CYCLE);
 
+        // NOTE: Timings (timeouts/waits) may need adjustment for the new distances
         schedule(
                 new RunCommand(() -> follower.update()),
                 new SequentialCommandGroup(
-                        new FollowPathCommand(follower, Path1).alongWith(new WaitCommand(1000).andThen(new InstantCommand(() -> mShooter.setTargetVelocity(2700.0)))),
-                        alignAndShoot().withTimeout(2650),
-                        new RunIntakeCommand(mIntake).raceWith(new FollowPathCommand(follower, Path2, 0.7)),
-                        new RunIntakeCommand(mIntake).raceWith(new FollowPathCommand(follower, Path3)),
-                        new WaitCommand(750),
-                        new FollowPathCommand(follower, Path4).alongWith(new InstantCommand(() -> mShooter.setTargetVelocity(2700.0))),
-                        alignAndShoot().withTimeout(2650),
-                        new RunIntakeCommand(mIntake).raceWith(new FollowPathCommand(follower, Path5)),
-                        new FollowPathCommand(follower, Path6).alongWith(new RunIntakeCommand(mIntake).withTimeout(500), (new InstantCommand(() -> mShooter.setTargetVelocity(2700.0)))),
-                        alignAndShoot().withTimeout(2650),
-                        new RunIntakeCommand(mIntake).raceWith(new FollowPathCommand(follower, Path7)),
-                        new FollowPathCommand(follower, Path8).alongWith(new RunIntakeCommand(mIntake).withTimeout(500), (new InstantCommand(() -> mShooter.setTargetVelocity(2700.0)))),
-                        alignAndShoot().withTimeout(2650),
-                        new FollowPathCommand(follower, Path9)
+                        // Path 1: Move to first shoot position + Spin up shooter
+                        new FollowPathCommand(follower, Path1).alongWith(new InstantCommand(() -> mShooter.setTargetVelocity(3000.0))),
+
+                        // Shoot 1
+                        alignAndShoot().withTimeout(3250),
+
+                        // Path 2: Go to Intake (Race with intake running)
+                        new RunIntakeCommand(mIntake).raceWith(new FollowPathCommand(follower, Path2)),
+
+                        // Path 3: Return to Shoot + Spin up
+                        new FollowPathCommand(follower, Path3).alongWith(new RunIntakeCommand(mIntake).withTimeout(750), new InstantCommand(() -> mShooter.setTargetVelocity(3000.0))),
+
+                        // Shoot 2
+                        alignAndShoot().withTimeout(3250),
+
+                        // Path 4: Go to Intake (Race with intake running)
+                        new RunIntakeCommand(mIntake).raceWith(new FollowPathCommand(follower, Path4)),
+
+                        // Path 5: Return to Shoot + Spin up
+                        new FollowPathCommand(follower, Path5).alongWith(new RunIntakeCommand(mIntake).withTimeout(750), new InstantCommand(() -> mShooter.setTargetVelocity(3000.0))),
+
+                        // Shoot 3
+                        alignAndShoot().withTimeout(3250),
+
+                        // Path 6: Park
+                        new FollowPathCommand(follower, Path6)
                 )
         );
     }
@@ -318,12 +279,13 @@ public abstract class Short12 extends CommandOpMode {
     }
 
     public Command alignAndShoot() {
+        // You may need to adjust the heading target (degrees(130.0)) based on the new shooting position of x=57
         return new AlignToTagCommand(
                 mVision,
                 mDrive,
                 () -> 0.0,
                 () -> 0.0,
-                degrees(130.0),
+                degrees(114.0), // Updated to match your path heading at the shooting spot (Path 3/5 end heading)
                 alliance
         ).alongWith(new RunShooterDistanceCommand(mShooter, mVision), new ShootFeedCommand(mFeeder, mIntake, mShooter, mLed, mDrive::isAligned));
     }
