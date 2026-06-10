@@ -10,8 +10,10 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import java.util.function.BooleanSupplier;
 
 /**
- * A simple command that runs the shooter at a specific velocity while active,
- * and stops the shooter when it ends.
+ * Runs the feeder + intake to shoot while the shooter is at speed and aligned.
+ * Uses tolerance hysteresis: a tight tolerance is required to START feeding,
+ * then a looser tolerance keeps feeding so a brief velocity dip from a ball
+ * passing through doesn't kick us back into warmup mid-burst.
  */
 public class ShootFeedCommand extends CommandBase {
 
@@ -19,17 +21,19 @@ public class ShootFeedCommand extends CommandBase {
     private Feeder feeder;
     private Intake intake;
     private Led led;
-    private  BooleanSupplier isAligned;
+    private BooleanSupplier isAligned;
 
+    // True once we've begun feeding; widens the tolerance window.
+    private boolean isFeeding = false;
 
-    public ShootFeedCommand(Feeder feeder, Intake intake, Shooter shooter, Led led,BooleanSupplier isAligned) {
+    public ShootFeedCommand(Feeder feeder, Intake intake, Shooter shooter, Led led, BooleanSupplier isAligned) {
         this.feeder = feeder;
         this.shooter = shooter;
         this.intake = intake;
         this.isAligned = isAligned;
         this.led = led;
-        // Declare subsystem dependency so the scheduler knows
-        // this command requires the Shooter subsystem.
+        // Declare subsystem dependencies so the scheduler knows
+        // this command requires the Feeder and Intake subsystems.
         addRequirements(feeder, intake);
     }
 
@@ -37,37 +41,44 @@ public class ShootFeedCommand extends CommandBase {
     public void initialize() {
         feeder.setSpeed(0.0);
         intake.setSpeed(0.0);
+        isFeeding = false;
         led.setState(Led.RobotState.SHOOTER_WARMING_UP);
     }
 
     @Override
     public void execute() {
-        if (shooter.getTargetVelocity() < 3000.0 && Math.abs(shooter.getError()) < 275.0 && isAligned.getAsBoolean()) {
+        boolean highGoal = shooter.getTargetVelocity() > 3000.0;
+
+        // Tight tolerance to START, loose tolerance to KEEP feeding.
+        double startTol = highGoal ? 175.0 : 325.0;
+        double keepTol  = highGoal ? 500.0 : 510.0;
+        double tol = isFeeding ? keepTol : startTol;
+
+        if (Math.abs(shooter.getError()) < tol && isAligned.getAsBoolean()) {
             feeder.setSpeed(1.0);
-            intake.setSpeed(0.8);
-            led.setState(Led.RobotState.SHOOTER_READY);
-        } else if (shooter.getTargetVelocity() > 3000.0 && Math.abs(shooter.getError()) < 80.0 && isAligned.getAsBoolean()) {
-            feeder.setSpeed(1.0);
-            intake.setSpeed(0.8);
+            intake.setSpeed(1.0);
+            isFeeding = true;
             led.setState(Led.RobotState.SHOOTER_READY);
         } else {
             feeder.setSpeed(0.0);
             intake.setSpeed(0.0);
+            isFeeding = false;
             led.setState(Led.RobotState.SHOOTER_WARMING_UP);
         }
     }
 
     @Override
     public void end(boolean interrupted) {
-        // Called once when the command ends (button released)
+        // Called once when the command ends (button released).
         feeder.setSpeed(0.0);
         intake.setSpeed(0.0);
+        isFeeding = false;
         led.setState(Led.RobotState.SHOOTER_IDLE);
     }
 
     @Override
     public boolean isFinished() {
-        // Return false so the command runs until it is explicitly interrupted
+        // Run until explicitly interrupted (button released).
         return false;
     }
 }

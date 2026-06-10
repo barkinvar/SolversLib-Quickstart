@@ -15,15 +15,24 @@ public class AlignToTagCommand extends CommandBase {
     private final double targetHeadingRadians;
 
     // --- Tuning Constants ---
-    private static final double Kp = 0.022;
-    private static final double Kd = 0.001;
+    // PD steers toward the tag. kStatic is a feedforward that guarantees just enough power to break
+    // static friction for the final degrees, so we can run a LOW Kp (no overshoot) and still reach
+    // the target instead of stalling short of it.
+    private static final double Kp = 0.0175;      // lowered from 0.022 to kill the overshoot
+    private static final double Kd = 0.05;     // more damping for momentum + vision latency
+    private static final double kStatic = 0.025;  // min turn power to overcome friction near target
 
-    private static final double MAX_VISION_SPEED = 1.0;
+    // Inside this error band (tx units) we count as aligned and stop turning, so the robot settles
+    // instead of hunting back and forth across the target.
+    private static final double TURN_TOLERANCE = 2.65;
 
-    private static final double SCAN_SPEED = 1.0;
+    private static final double MAX_VISION_SPEED = 0.5;
+
+    private static final double SCAN_SPEED = 0.8;
 
     // State Variables
     private double previousTx = 0;
+    private boolean hasPreviousTx = false;
 
     // 0 = Not scanning (or undecided), 1 = Left, -1 = Right
     private double lockedScanDirection = 0;
@@ -42,6 +51,7 @@ public class AlignToTagCommand extends CommandBase {
     @Override
     public void initialize() {
         previousTx = 0;
+        hasPreviousTx = false;
         lockedScanDirection = 0; // Reset on start
         drive.aligned = false;
 
@@ -64,16 +74,28 @@ public class AlignToTagCommand extends CommandBase {
             double tx = vision.getSteeringError();
 
             if(vision.getDistance() > 2.65) {
-                tx += alliance == BaseShooterOpMode.Alliance.BLUE ? -3.0 : 3.0;
+                tx += alliance == BaseShooterOpMode.Alliance.BLUE ? -2.0 : 2.0;
             }
 
-            double derivative = tx - previousTx;
+            // Guard the first frame after (re)acquiring the tag so previousTx=0 doesn't cause a
+            // huge fake derivative kick.
+            double derivative = hasPreviousTx ? (tx - previousTx) : 0.0;
             previousTx = tx;
+            hasPreviousTx = true;
 
-            double rawTurn = -(Kp * tx + Kd * derivative);
-            turnPower = Math.max(-MAX_VISION_SPEED, Math.min(MAX_VISION_SPEED, rawTurn));
+            boolean aligned = Math.abs(tx) <= TURN_TOLERANCE;
+            drive.aligned = aligned;
 
-            drive.aligned = Math.abs(tx) < 2.65;
+            if (aligned) {
+                // Within the error margin: hold so we settle instead of hunting.
+                turnPower = 0.0;
+            } else {
+                double pd = -(Kp * tx + Kd * derivative);
+                // Static feedforward in the direction we're already turning: guarantees the last
+                // few degrees still move under a low Kp instead of stalling short of the target.
+                pd += Math.copySign(kStatic, pd);
+                turnPower = Math.max(-MAX_VISION_SPEED, Math.min(MAX_VISION_SPEED, pd));
+            }
 
         } else {
             // ===========================================
@@ -95,6 +117,7 @@ public class AlignToTagCommand extends CommandBase {
             turnPower = lockedScanDirection * SCAN_SPEED;
 
             previousTx = 0;
+            hasPreviousTx = false;
             drive.aligned = false;
         }
 

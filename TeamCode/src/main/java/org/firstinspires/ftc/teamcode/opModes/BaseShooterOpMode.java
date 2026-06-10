@@ -4,6 +4,7 @@ import static org.firstinspires.ftc.teamcode.subsystems.Led.RobotState.RGB_CYCLE
 import static org.firstinspires.ftc.teamcode.subsystems.Led.RobotState.SHOOTER_IDLE;
 
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.Pose;
 import com.seattlesolvers.solverslib.command.CommandOpMode;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
@@ -97,7 +98,10 @@ public abstract class BaseShooterOpMode extends CommandOpMode {
             Thread.currentThread().interrupt();
         }
 
-        follower.setPose(PoseStorage.currentPose);
+        // Carry the heading across auto -> teleop from the stored snapshot. The Pinpoint restarts its
+        // tracking from 0 across the OpMode boundary, so we cannot read the heading live here - the
+        // last value auto saved into PoseStorage is the source of truth.
+        follower.setPose(new Pose(0.0, 0.0, PoseStorage.currentPose.getHeading()));
         follower.startTeleOpDrive();
 
         mLed.setState(RGB_CYCLE);
@@ -118,8 +122,17 @@ public abstract class BaseShooterOpMode extends CommandOpMode {
 
         // 2. Run Scheduler
         super.run();
+        // Guard localization BEFORE updating the follower so a Pinpoint glitch/reboot is detected
+        // and re-synced this same loop instead of corrupting the field-oriented heading.
+        mDrive.updateLocalization();
         follower.update();
-
+        telemetryData.addData("Heading", Math.toDegrees(follower.getPose().getHeading()));
+        // --- Pinpoint health (watch these to see if the odometry computer hiccupped) ---
+        telemetryData.addData("Pinpoint", mDrive.getLocalizationStatus());
+        telemetryData.addData("PP Healthy", mDrive.isLocalizationHealthy());
+        telemetryData.addData("PP Faults", mDrive.getLocalizationFaultCount());
+        telemetryData.addData("PP Resyncs", mDrive.getLocalizationResyncCount());
+        telemetryData.addData("PP Freq(Hz)", mDrive.getPinpointFrequency());
         // 3. Update Telemetry
         telemetryData.update();
     }

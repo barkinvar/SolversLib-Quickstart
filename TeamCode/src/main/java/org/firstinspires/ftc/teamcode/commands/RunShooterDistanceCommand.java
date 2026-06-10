@@ -8,7 +8,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Vision;
  * Runs the shooter at a velocity calculated based on Vision distance.
  * * Logic:
  * 1. No Target -> Fallback RPM
- * 2. Distance > 3.25 -> Long Range RPM
+ * 2. Long Range (dist > cutoff) -> Interpolate [2.75 m, 3.5 m] onto [3100, 3300] RPM
  * 3. Standard Range -> Interpolate between Min/Max distance and RPM
  */
 public class RunShooterDistanceCommand extends CommandBase {
@@ -18,14 +18,20 @@ public class RunShooterDistanceCommand extends CommandBase {
 
     // Tuning Constants
     private static final double MIN_DIST = 1.29;
-    private static final double MAX_DIST = 2.35;
+    private static final double MAX_DIST = 2.45;
 
     private static final double MIN_RPM = 2650.0;
-    private static final double MAX_RPM = 2775.0;
+    private static final double MAX_RPM = 2800.0;
 
 
     private static final double LONG_RANGE_CUTOFF = 2.65;
-    private static final double LONG_RANGE_RPM = 3185.0;
+
+    // Long-range shots interpolate distance [2.75 m, 3.5 m] onto RPM [3100, 3300].
+    private static final double LONG_MIN_DIST = 2.7;
+    private static final double LONG_MAX_DIST = 3.5;
+    private static final double LONG_MIN_RPM = 3075.0;
+    private static final double LONG_MAX_RPM = 3350.0;
+
     private static final double FALLBACK_RPM = 2600.0;
 
     public RunShooterDistanceCommand(Shooter shooter, Vision vision) {
@@ -50,9 +56,12 @@ public class RunShooterDistanceCommand extends CommandBase {
         if (!vision.hasValidTarget()) {
             targetRPM = FALLBACK_RPM;
         }
-        // 2. Long Range Check
+        // 2. Long Range Check: interpolate RPM with distance instead of a flat value.
         else if (vision.getDistance() > LONG_RANGE_CUTOFF) {
-            targetRPM = LONG_RANGE_RPM;
+            // Clamp distance to [2.75, 3.5]; closer than 2.75 -> 3100, farther than 3.5 -> 3300.
+            double clampedDist = Math.max(LONG_MIN_DIST, Math.min(vision.getDistance(), LONG_MAX_DIST));
+            double percent = (clampedDist - LONG_MIN_DIST) / (LONG_MAX_DIST - LONG_MIN_DIST);
+            targetRPM = LONG_MIN_RPM + (percent * (LONG_MAX_RPM - LONG_MIN_RPM));
         }
         // 3. Interpolation Logic
         else {

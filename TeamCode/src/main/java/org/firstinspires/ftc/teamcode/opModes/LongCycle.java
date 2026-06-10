@@ -14,7 +14,6 @@ import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.RunCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
-import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 import com.seattlesolvers.solverslib.util.TelemetryData;
 
@@ -31,15 +30,15 @@ import org.firstinspires.ftc.teamcode.subsystems.Led;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
 
-// Using the Alliance Enum from your BaseShooterOpMode
 import org.firstinspires.ftc.teamcode.opModes.BaseShooterOpMode.Alliance;
 
 /**
- * Short12
- * Contains all auto logic for Blue and Red.
- * Extend this class and pass the Alliance in the constructor to create the OpMode.
+ * LongCycle
+ * Same opening as Long9 (preload shot + one intake cycle = first two shots), then instead of the
+ * rest it shuttles to the (9, 11) @ 180 deg pickup point and back to the shoot spot three times,
+ * shooting after each return. Total = 5 shots. Extend and pass the Alliance.
  */
-public abstract class Long9 extends CommandOpMode {
+public abstract class LongCycle extends CommandOpMode {
 
     protected final Alliance alliance;
 
@@ -54,10 +53,10 @@ public abstract class Long9 extends CommandOpMode {
     private Drive mDrive;
     private Led mLed;
 
-    // Path chains
-    private PathChain Path1, Path2, Path3, Path4, Path5, Path6;
+    // Opening paths (first two shots) + the reusable shuttle legs + the park.
+    private PathChain Path1, Path2, Path3, PathOut, PathBack, PathPark;
 
-    public Long9(Alliance alliance) {
+    public LongCycle(Alliance alliance) {
         this.alliance = alliance;
     }
 
@@ -115,7 +114,7 @@ public abstract class Long9 extends CommandOpMode {
                 )
                 .build();
 
-        // Path2: Shoot Position -> Intake Sample 1 (16, 35.5)
+        // Path2: Shoot Position -> Intake Sample 1 (9, 35.5)
         Path2 = follower
                 .pathBuilder()
                 .addPath(
@@ -146,28 +145,30 @@ public abstract class Long9 extends CommandOpMode {
                 )
                 .build();
 
-        // Path4: Shoot Position -> Intake Sample 2 (12, 60)
-        Path4 = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierCurve(
-                                pose(57.000, 21.000, 114),
-                                point(60.434, 61.476),
-                                pose(9.169, 58.975, 180)
-                        )
-                )
-                .setLinearHeadingInterpolation(
-                        radians(114),
-                        radians(180)
-                )
-                .build();
-
-        // Path5: Intake Sample 2 -> Shoot Position (57, 21)
-        Path5 = follower
+        // PathOut: Shoot Position (57, 21) -> Pickup point (9, 11) @ 180. Reused every cycle.
+        PathOut = follower
                 .pathBuilder()
                 .addPath(
                         new BezierLine(
-                                pose(9.169, 58.975, 180),
+                                pose(57.000, 21.000, 114),
+                                pose(9.000, 11.000, 180)
+                        )
+                )
+                // Finish the turn to 180 by the halfway point so we're facing the pickup before the
+                // translation ends (third arg = fraction of the path over which heading completes).
+                .setLinearHeadingInterpolation(
+                        radians(114),
+                        radians(180),
+                        0.5
+                )
+                .build();
+
+        // PathBack: Pickup point (9, 11) -> Shoot Position (57, 21). Reused every cycle.
+        PathBack = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                pose(9.000, 11.000, 180),
                                 pose(57.000, 21.000, 114)
                         )
                 )
@@ -177,18 +178,18 @@ public abstract class Long9 extends CommandOpMode {
                 )
                 .build();
 
-        // Path6: Park / End (32, 40)
-        Path6 = follower
+        // PathPark: Shoot Position (57, 21) -> Park (32, 40) @ 180. Same park as Long9 (Path6).
+        PathPark = follower
                 .pathBuilder()
                 .addPath(
                         new BezierLine(
                                 pose(57.000, 21.000, 114),
-                                pose(32.000, 40.000, 180)
+                                pose(51.000, 25.000, 120)
                         )
                 )
                 .setLinearHeadingInterpolation(
                         radians(114),
-                        radians(180)
+                        radians(120)
                 )
                 .build();
     }
@@ -225,7 +226,6 @@ public abstract class Long9 extends CommandOpMode {
         follower.setStartingPose(pose(57.000, 9.000, 90));
         mLed.setState(RGB_CYCLE);
 
-        // NOTE: Timings (timeouts/waits) may need adjustment for the new distances
         schedule(
                 new RunCommand(() -> { mDrive.updateLocalization(); follower.update(); }),
                 new SequentialCommandGroup(
@@ -233,7 +233,7 @@ public abstract class Long9 extends CommandOpMode {
                         new FollowPathCommand(follower, Path1).alongWith(new InstantCommand(() -> mShooter.setTargetVelocity(3000.0))),
 
                         // Shoot 1
-                        alignAndShoot().withTimeout(3250),
+                        alignAndShoot().withTimeout(2250),
 
                         // Path 2: Go to Intake (Race with intake running)
                         new RunIntakeCommand(mIntake).raceWith(new FollowPathCommand(follower, Path2)),
@@ -242,20 +242,34 @@ public abstract class Long9 extends CommandOpMode {
                         new FollowPathCommand(follower, Path3).alongWith(new RunIntakeCommand(mIntake).withTimeout(750), new InstantCommand(() -> mShooter.setTargetVelocity(3000.0))),
 
                         // Shoot 2
-                        alignAndShoot().withTimeout(3250),
+                        alignAndShoot().withTimeout(2250),
 
-                        // Path 4: Go to Intake (Race with intake running)
-                        new RunIntakeCommand(mIntake).raceWith(new FollowPathCommand(follower, Path4)),
+                        // Shuttle to (9, 11) and back, shooting after each return. 3 times.
+                        shuttleCycle(),
+                        shuttleCycle(),
+                        shuttleCycle(),
 
-                        // Path 5: Return to Shoot + Spin up
-                        new FollowPathCommand(follower, Path5).alongWith(new RunIntakeCommand(mIntake).withTimeout(750), new InstantCommand(() -> mShooter.setTargetVelocity(3000.0))),
-
-                        // Shoot 3
-                        alignAndShoot().withTimeout(3250),
-
-                        // Path 6: Park
-                        new FollowPathCommand(follower, Path6)
+                        // Park (same end pose as Long9)
+                        new FollowPathCommand(follower, PathPark)
                 )
+        );
+    }
+
+    /**
+     * One shuttle cycle: drive out to the (9, 11) pickup with the intake running, drive back to the
+     * shoot spot while spinning up, then align and shoot. A fresh instance is built per call so the
+     * same command objects are never scheduled more than once.
+     */
+    private Command shuttleCycle() {
+        return new SequentialCommandGroup(
+                // Out to pickup (9, 11) @ 180 with intake running
+                new RunIntakeCommand(mIntake).raceWith(new FollowPathCommand(follower, PathOut)),
+
+                // Back to shoot position + spin up
+                new FollowPathCommand(follower, PathBack).alongWith(new RunIntakeCommand(mIntake).withTimeout(750), new InstantCommand(() -> mShooter.setTargetVelocity(3000.0))),
+
+                // Shoot
+                alignAndShoot().withTimeout(1750)
         );
     }
 
@@ -285,13 +299,12 @@ public abstract class Long9 extends CommandOpMode {
     }
 
     public Command alignAndShoot() {
-        // You may need to adjust the heading target (degrees(130.0)) based on the new shooting position of x=57
         return new AlignToTagCommand(
                 mVision,
                 mDrive,
                 () -> 0.0,
                 () -> 0.0,
-                degrees(114.0), // Updated to match your path heading at the shooting spot (Path 3/5 end heading)
+                degrees(114.0),
                 alliance
         ).alongWith(new RunShooterDistanceCommand(mShooter, mVision), new ShootFeedCommand(mFeeder, mIntake, mShooter, mLed, mDrive::isAligned));
     }

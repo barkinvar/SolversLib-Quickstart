@@ -120,7 +120,7 @@ public abstract class Short12 extends CommandOpMode {
                 .addPath(
                         new BezierLine(
                                 pose(26.341, 131.049, 144),
-                                pose(57.000, 84.000, 134)
+                                pose(58.000, 85.000, 134)
                         )
                 )
                 .setLinearHeadingInterpolation(
@@ -133,8 +133,8 @@ public abstract class Short12 extends CommandOpMode {
                 .pathBuilder()
                 .addPath(
                         new BezierLine(
-                                pose(57.000, 84.000, 134),
-                                pose(19.000, 84.500, 180)
+                                pose(58.000, 85.000, 134),
+                                pose(20.000, 84.500, 180)
                         )
                 )
                 .setLinearHeadingInterpolation(
@@ -147,9 +147,9 @@ public abstract class Short12 extends CommandOpMode {
                 .pathBuilder()
                 .addPath(
                         new BezierCurve(
-                                point(19.000, 84.500),
-                                point(23.000, 80.000),
-                                point(17.000, 76.000)
+                                point(20.000, 84.500),
+                                point(26.000, 83.000),
+                                point(17.500, 78.000)
                         )
                 )
                 .setLinearHeadingInterpolation(
@@ -162,7 +162,7 @@ public abstract class Short12 extends CommandOpMode {
                 .pathBuilder()
                 .addPath(
                         new BezierLine(
-                                pose(17.000, 76.000, 90),
+                                pose(17.500, 78.000, 90),
                                 pose(57.000, 84.000, 134)
                         )
                 )
@@ -178,7 +178,7 @@ public abstract class Short12 extends CommandOpMode {
                         new BezierCurve(
                                 pose(57.000, 84.000, 134),
                                 point(63.000, 53.000),
-                                pose(12.000, 60.000, 180)
+                                pose(13.500, 60.000, 180)
                         )
                 )
                 .setLinearHeadingInterpolation(
@@ -191,7 +191,7 @@ public abstract class Short12 extends CommandOpMode {
                 .pathBuilder()
                 .addPath(
                         new BezierLine(
-                                pose(12.000, 60.000, 180),
+                                pose(13.500, 60.000, 180),
                                 pose(57.000, 84.000, 134)
                         )
                 )
@@ -207,7 +207,7 @@ public abstract class Short12 extends CommandOpMode {
                         new BezierCurve(
                                 pose(57.000, 84.000, 134),
                                 point(63.000, 30.000),
-                                pose(12.000, 36.000, 180)
+                                pose(13.500, 36.000, 180)
                         )
                 )
                 .setLinearHeadingInterpolation(
@@ -220,7 +220,7 @@ public abstract class Short12 extends CommandOpMode {
                 .pathBuilder()
                 .addPath(
                         new BezierLine(
-                                pose(12.000, 36.000, 180),
+                                pose(13.500, 36.000, 180),
                                 pose(57.000, 84.000, 131)
                         )
                 )
@@ -278,7 +278,7 @@ public abstract class Short12 extends CommandOpMode {
         mLed.setState(RGB_CYCLE);
 
         schedule(
-                new RunCommand(() -> follower.update()),
+                new RunCommand(() -> { mDrive.updateLocalization(); follower.update(); }),
                 new SequentialCommandGroup(
                         new FollowPathCommand(follower, Path1).alongWith(new WaitCommand(1000).andThen(new InstantCommand(() -> mShooter.setTargetVelocity(2700.0)))),
                         alignAndShoot().withTimeout(2650),
@@ -314,6 +314,12 @@ public abstract class Short12 extends CommandOpMode {
         telemetryData.addData("X", follower.getPose().getX());
         telemetryData.addData("Y", follower.getPose().getY());
         telemetryData.addData("Heading", Math.toDegrees(follower.getPose().getHeading()));
+        // --- Pinpoint health ---
+        telemetryData.addData("Pinpoint", mDrive.getLocalizationStatus());
+        telemetryData.addData("PP Healthy", mDrive.isLocalizationHealthy());
+        telemetryData.addData("PP Faults", mDrive.getLocalizationFaultCount());
+        telemetryData.addData("PP Resyncs", mDrive.getLocalizationResyncCount());
+        telemetryData.addData("PP Freq(Hz)", mDrive.getPinpointFrequency());
         telemetryData.update();
     }
 
